@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="mb-4 text-center">Available Mentors 🎓</h2>
+
+<form method="GET" action="/view-mentors" class="mb-4">
+
+    <div class="row g-2">
+
+        <div class="col-md-6">
+            <input type="text" name="search" id="searchInput"
+                   class="form-control"
+                   placeholder="Enter search term..."
+                   value="{{ request.args.get('search', '') }}">
+        </div>
+
+        <div class="col-md-6 text-center">
+
+            <input type="hidden" name="filter" id="filterField"
+                   value="{{ request.args.get('filter', 'name') }}">
+
+            <div class="btn-group" role="group">
+
+                <button type="button" class="btn btn-outline-primary"
+                        onclick="setFilter('name')">Name</button>
+
+                <button type="button" class="btn btn-outline-success"
+                        onclick="setFilter('degree')">Degree</button>
+
+                <button type="button" class="btn btn-outline-warning"
+                        onclick="setFilter('skills')">Skills</button>
+
+                <button type="button" class="btn btn-outline-info"
+                        onclick="setFilter('college')">College</button>
+
+                <button type="button" class="btn btn-outline-danger"
+                        onclick="setFilter('experience')">Experience</button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="mt-3 text-center">
+        <button type="submit" class="btn btn-dark">Search 🔍</button>
+    </div>
+
+</form>
+
+<div class="row" id="mentorContainer">
+
+{% for mentor in mentors %}
+
+    <div class="col-md-6 mb-4 mentor-card">
+        <div class="card shadow-lg border-0">
+            <div class="card-body">
+
+                <h5 class="card-title text-primary">
+                    {{ mentor.name }}
+                </h5>
+
+                <p><strong>Degree:</strong> {{ mentor.degree if mentor.degree else "Not Updated" }}</p>
+                <p><strong>Skills:</strong> {{ mentor.skills if mentor.skills else "Not Updated" }}</p>
+                <p><strong>College:</strong> {{ mentor.college if mentor.college else "Not Updated" }}</p>
+                <p><strong>Experience:</strong> {{ mentor.experience if mentor.experience else "Not Updated" }}</p>
+
+                <!-- BOOK BUTTON -->
+                <form action="/book-session" method="POST">
+                    <input type="hidden" name="mentor_id" value="{{ mentor.user_id }}">
+                    <button type="submit" class="btn btn-success w-100 mt-2">
+                        Book Session 🚀
+                    </button>
+                </form>
+
+                <!-- PRIVATE CHAT BUTTON -->
+                <a href="/chat/{{ mentor.user_id }}"
+                <p>DEBUG ID: {{ mentor.user_id }}</p>
+                   class="btn btn-outline-light w-100 mt-2">
+                   Chat with Mentor 💬
+                </a>
+
+            </div>
+        </div>
+    </div>
+
+{% endfor %}
+
+</div>
+
+<input type="hidden" id="initialOffset" value="{{ offset }}">
+
+<div class="text-center mt-4">
+    <button id="loadMoreBtn" class="btn btn-primary">
+        Load More ⬇
+    </button>
+</div>
+
+<script>
+
+var offset = parseInt(document.getElementById("initialOffset").value) || 0;
+var limit = 4;
+
+function setFilter(field) {
+    document.getElementById("filterField").value = field;
+}
+
+document.getElementById("loadMoreBtn").addEventListener("click", function() {
+
+    var button = this;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Loading...';
+    button.disabled = true;
+
+    offset = offset + limit;
+
+    var search = document.getElementById("searchInput").value;
+    var filter = document.getElementById("filterField").value;
+
+    fetch("/view-mentors?offset=" + offset + "&search=" + search + "&filter=" + filter)
+        .then(function(response) {
+            return response.text();
+        })
+        .then(function(html) {
+
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(html, "text/html");
+
+            var newContent = doc.querySelector("#mentorContainer").innerHTML;
+
+            if (newContent.trim() === "") {
+                button.style.display = "none";
+            } else {
+
+                var container = document.getElementById("mentorContainer");
+                var tempDiv = document.createElement("div");
+                tempDiv.innerHTML = newContent;
+
+                Array.from(tempDiv.children).forEach(function(card) {
+
+                    card.style.opacity = "0";
+                    card.style.transform = "translateY(15px)";
+                    card.style.transition = "all 0.4s ease";
+
+                    container.appendChild(card);
+
+                    setTimeout(function() {
+                        card.style.opacity = "1";
+                        card.style.transform = "translateY(0)";
+                    }, 50);
+
+                });
+
+                button.innerHTML = "Load More ⬇";
+                button.disabled = false;
+            }
+
+        });
+
+});
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+.chat-container {
+    max-width: 800px;
+    margin: auto;
+}
+
+.chat-box {
+    height: 400px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.35);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.message {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    display: inline-block;
+    max-width: 75%;
+    animation: fadeIn 0.3s ease;
+}
+
+.my-message {
+    background: #6a11cb;
+    color: white;
+    float: right;
+    clear: both;
+}
+
+.other-message {
+    background: #ff4ecd;
+    color: white;
+    float: left;
+    clear: both;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<div class="chat-container">
+
+    <h2 class="text-center mb-4">Live Chat 💬</h2>
+
+    <div class="chat-box" id="chatBox"></div>
+
+    <div class="input-group">
+        <input type="text" id="messageInput" class="form-control"
+               placeholder="Type your message...">
+        <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+    </div>
+
+</div>
+
+<!-- Socket.IO CDN -->
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+<script>
+const socket = io();
+const username = "{{ session.get('name') }}";
+
+function sendMessage() {
+
+    const input = document.getElementById("messageInput");
+    const message = input.value.trim();
+
+    if (message === "") return;
+
+    socket.emit("send_message", {
+        username: username,
+        message: message
+    });
+
+    input.value = "";
+}
+
+socket.on("receive_message", function(data) {
+
+    const chatBox = document.getElementById("chatBox");
+    const messageDiv = document.createElement("div");
+
+    if (data.username === username) {
+        messageDiv.className = "message my-message";
+    } else {
+        messageDiv.className = "message other-message";
+    }
+
+    messageDiv.innerText = data.username + ": " + data.message;
+
+    chatBox.appendChild(messageDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+});
+</script>
+
+{% endblock %}

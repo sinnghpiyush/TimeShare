@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 class="mb-4 text-center">Create Your Account 📝</h2>
+
+<div class="card shadow-lg p-4 mx-auto" style="max-width: 500px;">
+
+    <form method="POST">
+
+        <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <input type="text" name="name" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Role</label>
+            <select name="role" class="form-select" required>
+                <option value="">Select Role</option>
+                <option value="Mentor">Mentor</option>
+                <option value="Student">Student</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-success w-100">
+            Register 🎉
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

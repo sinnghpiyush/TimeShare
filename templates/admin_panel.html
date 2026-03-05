@@ -1,0 +1,491 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+
+/* ===== Admin Header ===== */
+.admin-header {
+    background: linear-gradient(135deg, #6a11cb, #ff4ecd);
+    padding: 30px;
+    border-radius: 20px;
+    text-align: center;
+    margin-bottom: 30px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+    animation: fadeDown 0.6s ease;
+}
+
+@keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Stats Cards ===== */
+.stats-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.stats-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 35px rgba(0,0,0,0.35);
+}
+
+/* ===== Tables ===== */
+.table thead {
+    background: rgba(0,0,0,0.4);
+}
+
+.table tbody tr {
+    transition: 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.role-buttons a {
+    margin: 2px;
+}
+
+.ck-editor__editable {
+    background: white !important;
+    color: black !important;
+}
+
+.ck-editor__editable p {
+    color: black !important;
+}
+
+</style>
+
+<!-- ================= HEADER ================= -->
+
+<div class="admin-header">
+    <h1 class="mb-2">Admin Control Center 🛠</h1>
+    <p class="mb-0">Manage users, bookings & platform activity</p>
+</div>
+
+<!-- ================= STATISTICS ================= -->
+
+<div class="row text-center mb-5">
+
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card p-4">
+            <h6>Total Users</h6>
+            <h2 id="countUsers">0</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card p-4">
+            <h6>Total Mentors</h6>
+            <h2 id="countMentors">0</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card p-4">
+            <h6>Total Students</h6>
+            <h2 id="countStudents">0</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card p-4">
+            <h6>Total Bookings</h6>
+            <h2 id="countBookings">0</h2>
+        </div>
+    </div>
+
+</div>
+
+<!-- ================= USERS SECTION ================= -->
+
+<h4 class="mb-3">All Users</h4>
+
+<div class="card p-4 mb-5">
+    <div class="table-responsive">
+        <table class="table table-dark table-hover text-center align-middle">
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.user_id }}</td>
+                    <td>{{ user.name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        {% if user.role == "Admin" %}
+                            <span class="badge bg-danger">Admin</span>
+                        {% elif user.role == "Mentor" %}
+                            <span class="badge bg-info">Mentor</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Student</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+
+                        {% if user.user_id != session.get("user_id") %}
+
+                            <div class="role-buttons">
+
+                                <a href="/change-role/{{ user.user_id }}/Student"
+                                   class="btn btn-outline-primary btn-sm">
+                                   Student
+                                </a>
+
+                                <a href="/change-role/{{ user.user_id }}/Mentor"
+                                   class="btn btn-outline-success btn-sm">
+                                   Mentor
+                                </a>
+
+                                <a href="/change-role/{{ user.user_id }}/Admin"
+                                   class="btn btn-outline-warning btn-sm">
+                                   Admin
+                                </a>
+
+                                <a href="/delete-user/{{ user.user_id }}"
+                                   class="btn btn-danger btn-sm"
+                                   onclick="return confirm('Delete this user?')">
+                                   Delete
+                                </a>
+
+                            </div>
+
+                        {% else %}
+                            <span class="badge bg-light text-dark">You</span>
+                        {% endif %}
+
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+    </div>
+</div>
+
+<!-- ================= BOOKINGS SECTION ================= -->
+
+<h4 class="mb-3">All Bookings</h4>
+
+<div class="card p-4">
+    <div class="table-responsive">
+        <table class="table table-dark table-hover text-center align-middle">
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Student ID</th>
+                    <th>Mentor ID</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for booking in bookings %}
+                <tr>
+                    <td>{{ booking.id }}</td>
+                    <td>{{ booking.student_id }}</td>
+                    <td>{{ booking.mentor_id }}</td>
+
+                    <td>
+                        {% if booking.status == "Approved" %}
+                            <span class="badge bg-success">Approved</span>
+                        {% elif booking.status == "Rejected" %}
+                            <span class="badge bg-danger">Rejected</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        {% endif %}
+                    </td>
+
+                    <td>{{ booking.booking_time }}</td>
+
+                    <td>
+                        <a href="/delete-booking/{{ booking.id }}"
+                           class="btn btn-danger btn-sm"
+                           onclick="return confirm('Delete this booking?')">
+                           Delete
+                        </a>
+                    </td>
+
+                </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+    </div>
+</div>
+
+<!-- ================= ADD BLOG SECTION ================= -->
+
+<h4 class="mb-3 mt-5">Create New Blog</h4>
+
+<div class="card p-4 mb-5">
+
+    <form action="/add-blog" method="POST" enctype="multipart/form-data">
+
+        <div class="mb-3">
+            <label class="form-label">Blog Title</label>
+            <div class="mb-3">
+
+<label class="form-label">
+Blog Category
+</label>
+
+<select name="category" class="form-control">
+
+<option value="Career Guidance">
+Career Guidance
+</option>
+
+<option value="Tech">
+Tech
+</option>
+
+<option value="Education">
+Education
+</option>
+
+<option value="Internships">
+Internships
+</option>
+
+<option value="College Life">
+College Life
+</option>
+
+</select>
+
+</div>
+            <input type="text" name="title" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Featured Image</label>
+            <input type="file" name="featured_image" class="form-control">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Blog Content</label>
+            <textarea name="content" id="editor" class="form-control"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-success">Publish Blog</button>
+
+    </form>
+
+</div>
+
+<!-- ================= BLOGS SECTION ================= -->
+
+<h4 class="mb-3 mt-5">Manage Blogs</h4>
+
+<div class="card p-4 mb-5">
+    <div class="table-responsive">
+        <table class="table table-dark table-hover text-center align-middle">
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Image</th>
+                    <th>Order</th>
+                    <th>Created</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% if blogs %}
+                    {% for blog in blogs %}
+                    <tr>
+                        <td>{{ blog.id }}</td>
+                        <td>{{ blog.title }}</td>
+
+                        <td>
+                            {% if blog.image %}
+                                <img src="{{ url_for('static', filename='uploads/' + blog.image) }}"
+                                     style="width:70px; height:50px; object-fit:cover; border-radius:8px;">
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <td>{{ blog.display_order }}</td>
+                        <td>{{ blog.created_at }}</td>
+
+                        <td>
+                            <a href="/edit-blog/{{ blog.id }}"
+                                class="btn btn-warning btn-sm">
+                                Edit
+                            </a>
+
+                            <a href="/delete-blog/{{ blog.id }}"
+                               class="btn btn-danger btn-sm">
+                               Delete
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6">No blogs found</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+
+        </table>
+    </div>
+</div>
+
+<!-- ================= ANIMATION SCRIPT ================= -->
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function() {
+
+    const totalUsers = Number("{{ total_users }}");
+    const totalMentors = Number("{{ total_mentors }}");
+    const totalStudents = Number("{{ total_students }}");
+    const totalBookings = Number("{{ total_bookings }}");
+
+    function animateCounter(elementId, finalValue, duration = 1200) {
+
+        const element = document.getElementById(elementId);
+        if (!element) return;
+
+        let start = 0;
+        const range = finalValue - start;
+
+        if (range === 0) {
+            element.innerText = finalValue;
+            return;
+        }
+
+        const increment = range / (duration / 16);
+        let current = start;
+
+        const timer = setInterval(() => {
+
+            current += increment;
+
+            if ((increment > 0 && current >= finalValue) ||
+                (increment < 0 && current <= finalValue)) {
+
+                element.innerText = finalValue;
+                clearInterval(timer);
+            } else {
+                element.innerText = Math.floor(current);
+            }
+
+        }, 16);
+    }
+
+    animateCounter("countUsers", totalUsers);
+    animateCounter("countMentors", totalMentors);
+    animateCounter("countStudents", totalStudents);
+    animateCounter("countBookings", totalBookings);
+
+});
+
+</script>
+
+<!-- CKEditor 5 CDN -->
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+
+<script>
+
+function MyUploadAdapter(loader) {
+    this.loader = loader;
+}
+
+MyUploadAdapter.prototype.upload = function () {
+    return this.loader.file.then(file => new Promise((resolve, reject) => {
+
+        const data = new FormData();
+        data.append('upload', file);
+
+        fetch('/upload-image', {
+            method: 'POST',
+            body: data
+        })
+        .then(response => response.json())
+        .then(result => {
+            resolve({
+                default: result.url
+            });
+        })
+        .catch(error => {
+            reject(error);
+        });
+
+    }));
+};
+
+function MyCustomUploadAdapterPlugin(editor) {
+    editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
+        return new MyUploadAdapter(loader);
+    };
+}
+
+ClassicEditor
+.create(document.querySelector('#editor'), {
+
+    extraPlugins: [ MyCustomUploadAdapterPlugin ],
+
+    toolbar: {
+        items: [
+            'heading',
+            '|',
+            'bold','italic','underline',
+            'link',
+            '|',
+            'bulletedList','numberedList',
+            '|',
+            'outdent','indent',
+            '|',
+            'imageUpload',
+            'insertTable',
+            'blockQuote',
+            '|',
+            'undo','redo'
+        ]
+    },
+
+    image: {
+        toolbar: [
+            'imageTextAlternative',
+            'imageStyle:inline',
+            'imageStyle:block',
+            'imageStyle:side'
+        ]
+    },
+
+    table: {
+        contentToolbar: [
+            'tableColumn',
+            'tableRow',
+            'mergeTableCells'
+        ]
+    }
+
+})
+.catch(error => {
+    console.error(error);
+});
+
+</script>
+{% endblock %}

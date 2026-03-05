@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="text-center mb-4">Your Booking Requests 📅</h2>
+
+<div class="row">
+
+{% for booking in bookings %}
+
+    <div class="col-md-6 mb-4">
+        <div class="card p-4">
+
+            <h5 class="mb-2">Student: {{ booking.name }}</h5>
+            <p><strong>Date:</strong> {{ booking.booking_time }}</p>
+
+            <p><strong>Status:</strong> 
+                {% if booking.status == "Pending" %}
+                    <span class="badge bg-warning text-dark">Pending</span>
+                {% elif booking.status == "Approved" %}
+                    <span class="badge bg-success">Approved</span>
+                {% else %}
+                    <span class="badge bg-danger">Rejected</span>
+                {% endif %}
+            </p>
+
+            <!-- APPROVE / REJECT -->
+            {% if booking.status == "Pending" %}
+                <div class="d-flex gap-2 mb-2">
+                    <a href="/update-booking/{{ booking.id }}/Approved"
+                       class="btn btn-success w-50">
+                        Approve
+                    </a>
+                    <a href="/update-booking/{{ booking.id }}/Rejected"
+                       class="btn btn-danger w-50">
+                        Reject
+                    </a>
+                </div>
+            {% endif %}
+
+            <!-- CHAT BUTTON -->
+            <a href="/chat/{{ booking.student_id }}"
+               class="btn btn-outline-light w-100">
+               Chat with Student 💬
+            </a>
+
+        </div>
+    </div>
+
+{% endfor %}
+
+</div>
+
+{% endblock %}

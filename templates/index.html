@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+
+/* HERO */
+
+.hero{
+padding:60px 40px;
+border-radius:20px;
+background:linear-gradient(135deg,#1e3c72,#2a5298);
+color:white;
+margin-bottom:40px;
+}
+
+.hero h1{
+font-size:42px;
+font-weight:700;
+}
+
+.hero p{
+opacity:.9;
+font-size:18px;
+margin-top:15px;
+}
+
+/* FEATURES */
+
+.feature-box{
+background:rgba(255,255,255,0.07);
+border-radius:16px;
+padding:25px;
+text-align:center;
+margin-bottom:25px;
+}
+
+.feature-box h4{
+margin-top:10px;
+font-weight:600;
+}
+
+/* BLOG CARD */
+
+.blog-card{
+background:rgba(255,255,255,0.08);
+border-radius:18px;
+padding:20px;
+margin-bottom:35px;
+transition:.3s;
+}
+
+.blog-card:hover{
+transform:translateY(-5px);
+}
+
+.blog-card img{
+width:100%;
+border-radius:12px;
+margin-bottom:15px;
+}
+
+/* JOIN PANEL */
+
+.join-panel{
+position:sticky;
+top:100px;
+background:rgba(255,255,255,0.12);
+border-radius:20px;
+padding:25px;
+text-align:center;
+}
+
+.join-register{
+background:linear-gradient(135deg,#00d2ff,#3a7bd5);
+border:none;
+color:white;
+border-radius:50px;
+}
+
+.join-login{
+background:linear-gradient(135deg,#ff6a00,#ee0979);
+border:none;
+color:white;
+border-radius:50px;
+}
+
+</style>
+
+<div class="row">
+
+<div class="col-md-9">
+
+<div class="hero">
+
+<h1>Welcome to TimeShare 🚀</h1>
+
+<p>
+A Peer-to-Peer Career Guidance Platform where students connect
+directly with seniors, mentors and professionals for real advice.
+</p>
+
+<a href="/register" class="btn btn-warning btn-lg mt-3">
+Start Connecting →
+</a>
+
+</div>
+
+<div class="row">
+
+<div class="col-md-4">
+
+<div class="feature-box">
+
+<h4>Direct Mentorship</h4>
+
+<p>Talk directly with seniors who already walked the same path.</p>
+
+</div>
+
+</div>
+
+<div class="col-md-4">
+
+<div class="feature-box">
+
+<h4>No Agents</h4>
+
+<p>Get real career guidance without middlemen.</p>
+
+</div>
+
+</div>
+
+<div class="col-md-4">
+
+<div class="feature-box">
+
+<h4>Free Platform</h4>
+
+<p>TimeShare is completely free.</p>
+
+</div>
+
+</div>
+
+</div>
+
+<h3 class="mb-4 mt-4 fw-bold">Latest Articles</h3>
+
+{% if blogs %}
+
+{% for blog in blogs %}
+
+<div class="blog-card">
+
+{% if blog.featured_image %}
+<img src="{{ url_for('static', filename='uploads/' + blog.featured_image) }}">
+{% endif %}
+
+<h4 class="fw-bold">{{ blog.title }}</h4>
+
+<div class="opacity-75">
+{{ blog.content[:250] | safe }}...
+</div>
+
+<div class="mt-3">
+
+<a href="/blog/{{ blog.id }}" class="btn btn-sm btn-primary">
+Read More →
+</a>
+
+<span style="margin-left:10px; opacity:0.6;">
+👁 {{ blog.views }}
+</span>
+
+</div>
+
+</div>
+
+{% endfor %}
+
+{% else %}
+
+<div class="blog-card">
+<h5>No articles yet.</h5>
+</div>
+
+{% endif %}
+
+</div>
+
+<div class="col-md-3">
+
+<div class="join-panel">
+
+<h4 class="fw-bold mb-4">Join Now</h4>
+
+<a href="/register" class="btn btn-lg w-100 mb-3 join-register">
+Register
+</a>
+
+<a href="/login" class="btn btn-lg w-100 join-login">
+Login
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- SOCIAL SECTION -->
+
+<div class="social-panel">
+
+<h4 class="fw-bold mb-3">
+Connect With Us
+</h4>
+
+<p style="opacity:.8">
+Follow TimeShare
+</p>
+
+<div class="social-buttons">
+
+<a href="https://www.linkedin.com/in/sinnghpiyush"
+target="_blank"
+class="social-btn linkedin-btn">
+LinkedIn
+</a>
+
+<a href="https://www.instagram.com/sinnghpiyush?igsh=MXJzZ25qMHI4cjVzNg=="
+target="_blank"
+class="social-btn instagram-btn">
+Instagram
+</a>
+
+<a href="https://t.me/sinnghpiyush01"
+target="_blank"
+class="social-btn telegram-btn">
+Telegram
+</a>
+
+</div>
+
+</div>
+
+{% endblock %}

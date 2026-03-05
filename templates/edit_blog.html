@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+<h2 class="mb-4">Edit Blog</h2>
+
+<form action="/update-blog/{{ blog.id }}"
+method="POST"
+enctype="multipart/form-data">
+
+<div class="mb-3">
+
+<label class="form-label">
+Blog Title
+</label>
+
+<input
+type="text"
+name="title"
+value="{{ blog.title }}"
+class="form-control"
+required>
+
+</div>
+
+
+<div class="mb-3">
+
+<label class="form-label">
+Change Featured Image
+</label>
+
+<input
+type="file"
+name="featured_image"
+class="form-control">
+
+</div>
+
+
+<div class="mb-3">
+
+<label class="form-label">
+Blog Content
+</label>
+
+<textarea
+name="content"
+id="editor"
+class="form-control">
+
+{{ blog.content }}
+
+</textarea>
+
+</div>
+
+
+<button class="btn btn-success">
+Update Blog
+</button>
+
+<a href="/admin" class="btn btn-secondary">
+Cancel
+</a>
+
+</form>
+
+</div>
+
+
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+
+<script>
+
+ClassicEditor
+.create(document.querySelector('#editor'))
+.catch(error=>{
+console.error(error);
+});
+
+</script>
+
+{% endblock %}

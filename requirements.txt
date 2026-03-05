@@ -3,5 +3,6 @@ gunicorn
 Flask-SQLAlchemy
 Flask-Login
 Werkzeug
-Flask-SocketIO
+mysql-connector-python
+flask-socketio
 eventlet

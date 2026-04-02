@@ -7,12 +7,14 @@ click==8.3.1
 colorama==0.4.6
 Flask==3.1.2
 Flask-SocketIO==5.6.1
+gunicorn==25.3.0
 h11==0.16.0
 idna==3.11
 itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.3
 mysql-connector-python==9.6.0
+packaging==26.0
 pycodestyle==2.14.0
 python-engineio==4.13.1
 python-socketio==5.16.1

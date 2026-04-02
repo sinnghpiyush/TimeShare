@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 class="text-center mb-4">Complete Your Order</h2><div class="row justify-content-center">
+<div class="col-md-6"><div class="card p-4"><h4 class="mb-3 text-center">{{ product_name }}</h4><form method="POST" action="/place_order"><input type="hidden" name="product" value="{{ product_name }}"><input type="text" name="name" class="form-control mb-3" placeholder="Your Name" required><input type="text" name="phone" class="form-control mb-3" placeholder="Phone Number" required><input type="text" name="address" class="form-control mb-3" placeholder="Address" required><button type="button" onclick="payNow()" class="btn btn-success w-100">
+    Proceed to Payment
+</button>
+<script>
+function payNow() {
+
+    var options = {
+        "key": "rzp_test_SXE4YziLjpjNKg",
+        "amount": 50000,  // ₹500 (in paise)
+        "currency": "INR",
+        "name": "TimeShare",
+        "description": "{{ product_name }}",
+        "handler": function (response){
+
+            // Payment success → form submit
+            document.querySelector("form").submit();
+        },
+        "prefill": {
+            "name": document.querySelector('[name="name"]').value
+        },
+        "theme": {
+            "color": "#3399cc"
+        }
+    };
+
+    var rzp1 = new Razorpay(options);
+    rzp1.open();
+}
+</script>
+
+</form></div></div>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</div>{% endblock %}

@@ -12,7 +12,14 @@
     <div class="row align-items-center">
 
         <div class="col-md-8">
-            <h2 class="fw-bold">Welcome back, {{ name }} 👋</h2>
+            <h2 class="fw-bold">Welcome Back, {{ name }} 👋</h2>
+            {% if session.get("role") == "admin" %}
+<div class="text-center mb-3">
+    <a href="/admin" class="btn btn-warning">
+        Go to Admin Control Center ⚙️
+    </a>
+</div>
+{% endif %}
             <p class="opacity-75 mb-0">
                 Role: <strong>{{ role }}</strong>
             </p>

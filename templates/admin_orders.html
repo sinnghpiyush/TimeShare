@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 id="orders-section" class="text-center mb-4">Manage Orders 🚚</h2>
+
+<!-- 🔍 SEARCH BAR -->
+<div class="row justify-content-center mb-3">
+    <div class="col-md-6">
+        <form method="GET" action="/admin-orders#orders-section">
+            <input type="number"
+                   name="search_order"
+                   class="form-control"
+                   value="{{ request.args.get('search_order', '') }}"
+                   placeholder="Search order by ID">
+        </form>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+<div class="col-md-8">
+
+{% for order in orders %}
+
+<div class="card p-3 mb-3">
+
+<p><b>ID:</b> {{ order.id }}</p>
+<p><b>Name:</b> {{ order.name }}</p>
+<p><b>Product:</b> {{ order.product }}</p>
+
+<p><b>Status:</b> {{ order.status }}</p>
+
+{% if order.current_location %}
+<p><b>Location:</b> {{ order.current_location }}</p>
+{% endif %}
+
+<!-- 🚚 STATUS + LOCATION FORM -->
+<form method="POST" action="/admin/update-order-status">
+
+    <input type="hidden" name="order_id" value="{{ order.id }}">
+
+    <div class="d-flex flex-wrap gap-2 mt-2">
+
+        <button name="status" value="Shipped" class="btn btn-info btn-sm">
+            Shipped
+        </button>
+
+        <button name="status" value="Dispatched" class="btn btn-primary btn-sm">
+            Dispatched
+        </button>
+
+        <button name="status" value="Reached Nearby" class="btn btn-warning btn-sm">
+            Nearby
+        </button>
+
+        <button name="status" value="Out For Delivery" class="btn btn-dark btn-sm">
+            Out for Delivery
+        </button>
+
+        <button name="status" value="Delivered" class="btn btn-success btn-sm">
+            Delivered
+        </button>
+
+    </div>
+
+    <!-- 📍 LOCATION INPUT -->
+    <div class="mt-2">
+        <input type="text"
+               name="location"
+               class="form-control"
+               placeholder="Update current location (optional)">
+    </div>
+
+</form>
+
+</div>
+
+{% endfor %}
+
+</div>
+</div>
+
+{% endblock %}

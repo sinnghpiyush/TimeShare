@@ -246,8 +246,28 @@ pointer-events:all;
 
 <div>
 {% if session.get("user_id") %}
+
 <a class="btn btn-outline-light me-2" href="/dashboard">Dashboard</a>
+
+{% if session.get("role", "").strip().lower() == "admin" %}
+<a class="btn btn-warning me-2" href="/admin">Admin</a>
+<a class="btn btn-warning me-2" href="/admin-orders">Manage Orders</a>
+{% endif %}
+
+{% if session.get("role", "").strip().lower() != "admin" %}
+{% if session.get("role") != "admin" %}
+<a class="btn btn-outline-light me-2" href="/products">Products</a>
+{% endif %}
+
+{% if session.get("role") == "admin" %}
+<a class="btn btn-warning me-2" href="/admin-products">Manage Products</a>
+{% endif %}
+<a class="btn btn-outline-light me-2" href="/cart">Cart</a>
+<a class="btn btn-outline-light me-2" href="/orders">Orders</a>
+{% endif %}
+
 <a class="btn btn-danger" href="/logout">Logout</a>
+
 {% else %}
 <a class="btn btn-outline-light me-2" href="/login">Login</a>
 <a class="btn btn-success" href="/register">Register</a>
@@ -329,7 +349,13 @@ if(
 !href ||
 href.startsWith("#") ||
 href.startsWith("javascript") ||
-link.target === "_blank"
+link.target === "_blank" ||
+
+/* 🔥 IMPORTANT FIX */
+href.includes("/admin") ||
+href.includes("/delete") ||
+href.includes("/update") ||
+href.includes("/edit")
 ){
 return;
 }

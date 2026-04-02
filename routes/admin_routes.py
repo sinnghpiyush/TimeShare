@@ -10,6 +10,10 @@ admin = Blueprint("admin", __name__)
 @admin.route("/admin")
 def admin_panel():
 
+    search_user = request.args.get("search_user")
+    search_booking = request.args.get("search_booking")
+    search_blog = request.args.get("search_blog")
+
     if "user_id" not in session:
         return redirect("/login")
 
@@ -20,13 +24,37 @@ def admin_panel():
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
 
-    cursor.execute("SELECT * FROM users")
+    query = "SELECT * FROM users WHERE 1=1"
+    params = []
+
+    if search_user:
+        query += " AND (name LIKE %s OR email LIKE %s)"
+        params.append("%" + search_user + "%")
+        params.append("%" + search_user + "%")
+
+    cursor.execute(query, tuple(params))
     users = cursor.fetchall()
 
-    cursor.execute("SELECT * FROM bookings")
+    query = "SELECT * FROM bookings WHERE 1=1"
+    params = []
+
+    if search_booking:
+        query += " AND id = %s"
+        params.append(search_booking)
+
+    cursor.execute(query, tuple(params))
     bookings = cursor.fetchall()
 
-    cursor.execute("SELECT * FROM blogs ORDER BY created_at DESC")
+    query = "SELECT * FROM blogs WHERE 1=1"
+    params = []
+
+    if search_blog:
+        query += " AND title LIKE %s"
+        params.append("%" + search_blog + "%")
+
+    query += " ORDER BY created_at DESC"
+
+    cursor.execute(query, tuple(params))
     blogs = cursor.fetchall()
 
     cursor.execute("SELECT COUNT(*) as total FROM users")
@@ -104,7 +132,7 @@ def add_blog():
 
     flash("Blog Published Successfully","success")
 
-    return redirect("/admin")
+    return redirect("/admin#blogs-section")
 
 # ================= IMAGE UPLOAD FOR CKEDITOR =================
 
@@ -150,7 +178,7 @@ def delete_blog(blog_id):
     db.close()
 
     flash("Blog deleted successfully!", "success")
-    return redirect("/admin")
+    return redirect("/admin#blogs-section")
 
 
 # ================= DELETE USER =================
@@ -167,7 +195,7 @@ def delete_user(user_id):
 
     if user_id == session["user_id"]:
         flash("You cannot delete your own account!", "warning")
-        return redirect("/admin")
+        return redirect("/admin#users-section")
 
     db = get_db_connection()
     cursor = db.cursor()
@@ -181,7 +209,7 @@ def delete_user(user_id):
     db.close()
 
     flash("User deleted successfully!", "success")
-    return redirect("/admin")
+    return redirect("/admin#users-section")
 
 
 # ================= DELETE BOOKING =================
@@ -206,7 +234,7 @@ def delete_booking(booking_id):
     db.close()
 
     flash("Booking deleted successfully!", "success")
-    return redirect("/admin")
+    return redirect("/admin#bookings-section")
 
 
 # ================= CHANGE ROLE =================
@@ -223,7 +251,7 @@ def change_role(user_id, new_role):
 
     if new_role not in ["Student", "Mentor", "Admin"]:
         flash("Invalid Role!", "danger")
-        return redirect("/admin")
+        return redirect("/admin#users-section")
 
     db = get_db_connection()
     cursor = db.cursor()
@@ -235,7 +263,7 @@ def change_role(user_id, new_role):
     db.close()
 
     flash("User role updated successfully!", "success")
-    return redirect("/admin")
+    return redirect("/admin#users-section")
 
     # ================= EDIT BLOG PAGE =================
 
@@ -316,4 +344,4 @@ def update_blog(blog_id):
 
     flash("Blog updated successfully","success")
 
-    return redirect("/admin")
+    return redirect("/admin#blogs-section")

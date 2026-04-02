@@ -62,6 +62,18 @@
 
 <div class="admin-header">
     <h1 class="mb-2">Admin Control Center 🛠</h1>
+    <div class="d-flex justify-content-center gap-2 mt-3 flex-wrap">
+
+    <a href="/add-product-page" class="btn btn-success">
+        Add Product ➕
+    </a>
+
+    <a href="/manage-products" class="btn btn-info">
+        Manage Products 📦
+    </a>
+
+</div>
+
     <p class="mb-0">Manage users, bookings & platform activity</p>
 </div>
 
@@ -101,7 +113,12 @@
 
 <!-- ================= USERS SECTION ================= -->
 
-<h4 class="mb-3">All Users</h4>
+<h4 id="users-section" class="mb-3">All Users</h4>
+<form method="GET" action="/admin#users-section" class="mb-3">
+    <input type="text" name="search_user" class="form-control"
+    value="{{ request.args.get('search_user', '') }}"       
+    placeholder="Search user by name or email">
+</form>
 
 <div class="card p-4 mb-5">
     <div class="table-responsive">
@@ -177,7 +194,12 @@
 
 <!-- ================= BOOKINGS SECTION ================= -->
 
-<h4 class="mb-3">All Bookings</h4>
+<h4 id="bookings-section" class="mb-3">All Bookings</h4>
+<form method="GET" action="/admin#bookings-section" class="mb-3">
+    <input type="number" name="search_booking" class="form-control"
+    value="{{ request.args.get('search_booking', '') }}"    
+    placeholder="Search booking by ID">
+</form>
 
 <div class="card p-4">
     <div class="table-responsive">
@@ -291,7 +313,12 @@ College Life
 
 <!-- ================= BLOGS SECTION ================= -->
 
-<h4 class="mb-3 mt-5">Manage Blogs</h4>
+<h4 id="blogs-section" class="mb-3 mt-5">Manage Blogs</h4>
+<form method="GET" action="/admin#blogs-section" class="mb-3">
+    <input type="text" name="search_blog" class="form-control"
+    value="{{ request.args.get('search_blog', '') }}"       
+    placeholder="Search blog by title">
+</form>
 
 <div class="card p-4 mb-5">
     <div class="table-responsive">

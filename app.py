@@ -4,6 +4,10 @@ from routes.admin_routes import admin
 from config import get_db_connection
 from routes.auth_routes import auth
 import os
+import razorpay
+import random
+
+orders = []
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -14,11 +18,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 
 app = Flask(__name__)
+razorpay_client = razorpay.Client(auth=("rzp_test_SXE4YziLjpjNKg", "0wBEpp2w7GLaD0XRt19HdA43"))
 socketio = SocketIO(app)
 app.register_blueprint(auth)
 app.register_blueprint(admin)
 app.register_blueprint(api)
-app.secret_key = "supersecretkey123"
+app.secret_key = "netpiyush847818"
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB limit
 EMAIL_ADDRESS = "timeshare.co@gmail.com"
@@ -51,7 +56,7 @@ def home():
     category = request.args.get("category")
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor(dictionary=True, buffered=True)
 
     query = "SELECT * FROM blogs WHERE 1=1"
     params = []
@@ -124,6 +129,7 @@ def login():
             session["user_id"] = user[0]
             session["name"] = user[1]
             session["role"] = user[4]
+            session["email"] = user[2]
 
             flash("Login Successful! 🚀", "success")
 
@@ -143,7 +149,7 @@ def dashboard():
         return redirect("/login")
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor(dictionary=True, buffered=True)
 
     # Get profile image
     cursor.execute(
@@ -185,7 +191,7 @@ def mentor_profile():
         return "Access Denied"
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor(dictionary=True, buffered=True)
 
     # Fetch existing profile data
     cursor.execute(
@@ -202,14 +208,16 @@ def mentor_profile():
         profile_image = request.files.get("profile_image")
 
         if profile_image and profile_image.filename != "":
-            filename = secure_filename(profile_image.filename)
+            import time
+            filename = str(int(time.time())) + "_" + secure_filename(profile_image.filename)
+
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             profile_image.save(file_path)
 
             cursor.execute(
-                "UPDATE users SET profile_image=%s WHERE user_id=%s",
-                (filename, session["user_id"])
-            )
+            "UPDATE users SET profile_image=%s WHERE user_id=%s",
+            (filename, session["user_id"])
+        )
 
         if existing_profile:
             cursor.execute("""
@@ -268,7 +276,7 @@ def view_mentors():
     limit = 4
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor(dictionary=True, buffered=True)
 
     base_query = """
         SELECT users.user_id, users.name,
@@ -321,7 +329,7 @@ def book_session():
     student_id = session["user_id"]
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor(dictionary=True, buffered=True)
 
     try:
         # Insert booking
@@ -379,7 +387,7 @@ def view_bookings():
         return "Access Denied"
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor(dictionary=True, buffered=True)
 
     sql = """
         SELECT bookings.id,
@@ -413,7 +421,7 @@ def update_booking(booking_id, new_status):
         return "Invalid Status"
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor(dictionary=True, buffered=True)
 
     # Update booking status (only if mentor owns it)
     cursor.execute("""
@@ -469,7 +477,7 @@ def my_bookings():
         return redirect("/dashboard")
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor(dictionary=True, buffered=True)
 
     sql = """
         SELECT bookings.id,
@@ -590,7 +598,7 @@ def private_chat(other_user_id):
     room = "_".join(map(str, sorted([current_user_id, other_user_id])))
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor(dictionary=True, buffered=True)
 
     cursor.execute(
         "SELECT name FROM users WHERE user_id=%s",
@@ -637,7 +645,7 @@ def logout():
 def blog_detail(blog_id):
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor(dictionary=True, buffered=True)
 
     cursor.execute("SELECT * FROM blogs WHERE id=%s", (blog_id,))
     blog = cursor.fetchone()
@@ -651,7 +659,388 @@ def blog_detail(blog_id):
 
     return render_template("blog_detail.html", blog=blog)
 
+# ================= FOR PRODUCT ADD =================
 
+@app.route("/admin/add-product", methods=["GET", "POST"])
+def add_product():
+
+    if session.get("role", "").strip().lower() != "admin":
+        return "Access Denied"
+
+    if request.method == "POST":
+        name = request.form.get("name")
+        price = request.form.get("price")
+        image = request.files.get("image")
+
+        filename = None
+
+        if image and image.filename != "":
+            import time
+
+            filename = str(int(time.time())) + "_" + secure_filename(image.filename)
+            image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        cursor.execute(
+            "INSERT INTO products (name, price, image) VALUES (%s, %s, %s)",
+            (name, price, filename)
+        )
+
+        db.commit()
+        cursor.close()
+        db.close()
+
+        flash("Product added successfully!", "success")
+        return redirect("/manage-products")
+
+    return render_template("add_product.html")
+
+@app.route("/products")
+def products():
+
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True, buffered=True)
+
+    cursor.execute("SELECT * FROM products")
+    products = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    return render_template("products.html", products=products)
+
+@app.route("/admin-products")
+def admin_products():
+
+    if session.get("role", "").strip().lower() != "admin":
+        return "Access Denied"
+
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True, buffered=True)
+
+    cursor.execute("SELECT * FROM products")
+    products = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    return render_template("admin_products.html", products=products)
+
+@app.route("/delete-product/<int:product_id>")
+def delete_product(product_id):
+
+    if session.get("role", "").strip().lower() != "admin":
+        return "Access Denied"
+
+    db = get_db_connection()
+    cursor = db.cursor()
+
+    cursor.execute("DELETE FROM products WHERE id = %s", (product_id,))
+
+    db.commit()
+    cursor.close()
+    db.close()
+
+    flash("Product deleted successfully!", "warning")
+    return redirect("/products")
+
+@app.route("/add-product-page", methods=["GET", "POST"])
+def add_product_page():
+
+    if session.get("role", "").strip().lower() != "admin":
+        return "Access Denied"
+
+    if request.method == "POST":
+        name = request.form.get("name")
+        price = request.form.get("price")
+        description = request.form.get("description")
+        image = request.files.get("image")
+
+        filename = None
+
+        if image and image.filename != "":
+            filename = secure_filename(image.filename)
+            image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        cursor.execute(
+            "INSERT INTO products (name, description, price, image) VALUES (%s, %s, %s, %s)",
+            (name, description, price, filename)
+        )
+
+        db.commit()
+        cursor.close()
+        db.close()
+
+        flash("Product added successfully!", "success")
+        return redirect("/products")
+
+    return render_template("add_product.html")
+    
+@app.route("/add_to_cart/<product_name>")
+def add_to_cart(product_name):
+
+    if "cart" not in session:
+        session["cart"] = []
+
+    session["cart"].append(product_name)
+
+    flash(f"{product_name} added to cart", "success")
+
+    return redirect("/products")
+
+@app.route("/cart")
+def cart():
+    return render_template("cart.html")
+
+@app.route("/buy/<product_name>")
+def buy(product_name):
+    return render_template("buy.html", product_name=product_name)
+
+@app.route("/remove_from_cart/<int:index>")
+def remove_from_cart(index):
+
+    if "cart" in session:
+        if index < len(session["cart"]):
+            session["cart"].pop(index)
+
+    flash("Item removed from cart", "warning")
+    return redirect("/cart")
+
+@app.route("/place_order", methods=["POST"])
+def place_order():
+    name = request.form.get("name")
+    product = request.form.get("product")
+
+    order_id = random.randint(10000,99999)
+
+    db = get_db_connection()
+    cursor = db.cursor()
+
+    cursor.execute(
+        "INSERT INTO orders (id, name, product, status) VALUES (%s, %s, %s, %s)",
+        (order_id, name, product, "Placed")
+    )
+
+    db.commit()
+    cursor.close()
+    db.close()
+
+    # Send confirmation email
+    user_email = session.get("email")
+
+    if user_email:
+        subject = "Order Confirmation - TimeShare"
+        body = f"""
+Hello {name},
+
+Your order has been successfully placed!
+
+Order ID: {order_id}
+Product: {product}
+
+You can track your order from your dashboard.
+
+Thank you for using TimeShare!
+
+Regards,
+TimeShare Team
+"""
+        send_email(user_email, subject, body)   # ✅ अब सही जगह
+
+    flash(f"Order ID {order_id} placed successfully!", "success")
+
+    return redirect("/orders")
+
+@app.route("/orders")
+def orders_page():
+
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True, buffered=True)
+
+    cursor.execute("SELECT * FROM orders")
+    orders_data = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    return render_template("orders.html", orders=orders_data)
+
+@app.route("/admin/update_order/<int:order_id>/<string:new_status>")
+def update_order_status(order_id, new_status):
+
+    if "role" not in session or session["role"].lower() != "admin":
+        flash("Access Denied!", "danger")
+        return redirect("/dashboard")
+
+    db = get_db_connection()
+    cursor = db.cursor()
+
+    cursor.execute(
+        "UPDATE orders SET status = %s WHERE id = %s",
+        (new_status, order_id)
+    )
+
+    db.commit()
+    cursor.close()
+    db.close()
+
+    flash(f"Order marked as {new_status}", "success")
+    return redirect("/admin-orders")
+
+@app.route("/admin-orders")
+def admin_orders_page():
+
+    if session.get("role", "").strip().lower() != "admin":
+        return "Access Denied"
+    
+    search_order = request.args.get("search_order")
+
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True, buffered=True)
+
+    if search_order:
+        cursor.execute("SELECT * FROM orders WHERE id = %s", (search_order,))
+    else:
+        cursor.execute("SELECT * FROM orders")
+        
+    orders = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    return render_template("admin_orders.html", orders=orders)
+
+@app.route("/cancel/<int:order_id>")
+def cancel_order(order_id):
+
+    db = get_db_connection()
+    cursor = db.cursor()
+
+    cursor.execute(
+        "UPDATE orders SET status = %s WHERE id = %s",
+        ("Cancelled", order_id)
+    )
+
+    db.commit()
+    cursor.close()
+    db.close()
+
+    flash("Order cancelled successfully!", "warning")
+    return redirect("/orders")
+
+@app.route("/track/<int:order_id>")
+def track_order(order_id):
+
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True, buffered=True)
+
+    cursor.execute("SELECT * FROM orders WHERE id = %s", (order_id,))
+    order = cursor.fetchone()
+
+    cursor.close()
+    db.close()
+
+    return render_template("track.html", order=order)
+
+@app.route("/manage-products")
+def manage_products():
+
+    if session.get("role", "").strip().lower() != "admin":
+        return "Access Denied"
+
+    search = request.args.get("search")
+
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True, buffered=True)
+
+    if search:
+        cursor.execute(
+            "SELECT * FROM products WHERE name LIKE %s",
+            ("%" + search + "%",)
+        )
+    else:
+        cursor.execute("SELECT * FROM products")
+
+    products = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    return render_template("manage_products.html", products=products)
+
+@app.route("/edit-product/<int:product_id>", methods=["GET", "POST"])
+def edit_product(product_id):
+
+    if session.get("role", "").strip().lower() != "admin":
+        return "Access Denied"
+
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True, buffered=True)
+
+    # GET → show form
+    if request.method == "GET":
+        cursor.execute("SELECT * FROM products WHERE id=%s", (product_id,))
+        product = cursor.fetchone()
+
+        cursor.close()
+        db.close()
+
+        return render_template("edit_product.html", product=product)
+
+    # POST → update
+    name = request.form.get("name")
+    price = request.form.get("price")
+    image = request.files.get("image")
+
+    if image and image.filename != "":
+        filename = secure_filename(image.filename)
+        image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        cursor.execute(
+            "UPDATE products SET name=%s, price=%s, image=%s WHERE id=%s",
+            (name, price, filename, product_id)
+        )
+    else:
+        cursor.execute(
+            "UPDATE products SET name=%s, price=%s WHERE id=%s",
+            (name, price, product_id)
+        )
+@app.route("/admin/update-order-status", methods=["POST"])
+def update_order_status_new():
+
+    if session.get("role", "").strip().lower() != "admin":
+        return "Access Denied"
+
+    order_id = request.form.get("order_id")
+    status = request.form.get("status")
+    location = request.form.get("location")
+
+    db = get_db_connection()
+    cursor = db.cursor()
+
+    if location:
+        cursor.execute("""
+            UPDATE orders
+            SET status=%s, current_location=%s
+            WHERE id=%s
+        """, (status, location, order_id))
+    else:
+        cursor.execute("""
+            UPDATE orders
+            SET status=%s
+            WHERE id=%s
+        """, (status, order_id))
+
+    db.commit()
+    cursor.close()
+    db.close()
+
+    return redirect("/admin-orders#orders-section")
 # ================= SERVER START =================
 
 if __name__ == "__main__":

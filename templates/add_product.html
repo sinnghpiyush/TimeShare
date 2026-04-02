@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 class="text-center mb-4">Add Product 🛒</h2>
+
+<div class="row justify-content-center">
+<div class="col-md-6">
+
+<div class="card p-4">
+
+<form method="POST" enctype="multipart/form-data">
+
+<input type="text" name="name" class="form-control mb-3" placeholder="Product Name" required>
+
+<textarea name="description" class="form-control mb-3" placeholder="Product Description"></textarea>
+
+<input type="number" name="price" class="form-control mb-3" placeholder="Price" required>
+
+<input type="file" name="image" class="form-control mb-3">
+
+<button class="btn btn-success w-100">Add Product</button>
+
+</form>
+
+</div>
+</div>
+</div>
+
+{% endblock %}

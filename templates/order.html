@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 class="text-center mb-4">Your Orders 📦</h2><div class="row justify-content-center">
+<div class="col-md-6">{% if orders %}
+
+{% for order in orders %}
+<div class="card p-3 mb-3">
+    <p><b>Order ID:</b> {{ order.id }}</p>
+    <p><b>Product:</b> {{ order.product }}</p>
+    <p><b>Status:</b> {{ order.status }}</p>
+
+    {% if order.status != "Cancelled" %}
+    <a href="/cancel/{{ order.id }}" class="btn btn-danger btn-sm">Cancel Order</a>
+    {% endif %}
+</div>
+{% endfor %}
+
+{% else %}
+
+<p>No orders yet</p>
+{% endif %}</div>
+</div>{% endblock %}

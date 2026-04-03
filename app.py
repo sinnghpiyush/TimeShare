@@ -1041,6 +1041,18 @@ def update_order_status_new():
     db.close()
 
     return redirect("/admin-orders#orders-section")
+
+@app.route("/privacy-policy")
+def privacy_policy():
+    return render_template("privacy_policy.html")
+
+@app.route("/about")
+def about():
+    return render_template("about.html")
+
+@app.route("/contact")
+def contact():
+    return render_template("contact.html")
 # ================= SERVER START =================
 
 if __name__ == "__main__":

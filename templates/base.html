@@ -277,7 +277,8 @@ pointer-events:all;
 </div>
 </nav>
 
-<div class="container py-4">
+<div class="container py-5 d-flex justify-content-center">
+<div style="width:100%; max-width:900px;">
 
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
@@ -298,6 +299,7 @@ pointer-events:all;
 {% block content %}
 {% endblock %}
 
+</div>
 </div>
 
 <script>

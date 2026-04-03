@@ -1,12 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div style="max-width: 900px; margin: auto; padding: 40px;">
-<h2>Contact Us</h2>
+<div class="d-flex justify-content-center align-items-center" style="min-height:70vh;">
 
-<p>Email: support@timeinshare.com</p>
+<div class="card p-4" style="max-width:600px; width:100%; text-align:center;">
 
-<p>We usually respond within 24 hours.</p>
+<h2 class="mb-3">Contact Us</h2>
+
+<p class="mb-2"><strong>Email:</strong> support@timeinshare.com</p>
+
+<p class="mb-4">We usually respond within 24 hours.</p>
+
+<!-- FORM START -->
+<form method="POST" action="/contact">
+
+<input type="text" name="name" class="form-control mb-3" placeholder="Your Name" required>
+
+<input type="email" name="email" class="form-control mb-3" placeholder="Your Email" required>
+
+<input type="text" name="phone" class="form-control mb-3" placeholder="Mobile Number" required>
+
+<textarea name="message" class="form-control mb-3" placeholder="Your Message" rows="4" required></textarea>
+
+<button type="submit" class="btn btn-primary w-100">Send Message</button>
+
+</form>
+<!-- FORM END -->
+
+</div>
 
 </div>
 

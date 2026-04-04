@@ -244,6 +244,12 @@ pointer-events:all;
 
 <a class="navbar-brand" href="/">TimeShare</a>
 
+<div class="me-auto">
+<a class="btn btn-outline-light me-2" href="/about">About</a>
+<a class="btn btn-outline-light me-2" href="/contact">Contact</a>
+<a class="btn btn-outline-light me-2" href="/privacy-policy">Privacy</a>
+</div>
+
 <div>
 {% if session.get("user_id") %}
 
@@ -297,6 +303,33 @@ pointer-events:all;
 
 {% block content %}
 {% endblock %}
+
+<footer class="text-center mt-5" style="padding:40px 20px;">
+
+<hr style="opacity:0.3">
+
+<h5>About TimeShare</h5>
+<p style="max-width:600px;margin:auto;">
+TimeShare is a peer-to-peer career guidance platform where students connect with mentors and professionals for real advice and growth.
+</p>
+
+<div class="social-buttons mt-3">
+<a href="#" class="social-btn linkedin-btn">LinkedIn</a>
+<a href="#" class="social-btn instagram-btn">Instagram</a>
+<a href="#" class="social-btn telegram-btn">Telegram</a>
+</div>
+
+<div class="mt-3">
+<a href="/about" class="me-3 text-white">About</a>
+<a href="/contact" class="me-3 text-white">Contact</a>
+<a href="/privacy-policy" class="text-white">Privacy Policy</a>
+</div>
+
+<p class="mt-3" style="font-size:14px;opacity:0.7;">
+© 2026 TimeShare. All rights reserved.
+</p>
+
+</footer>
 
 </div>
 

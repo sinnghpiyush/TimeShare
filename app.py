@@ -1050,8 +1050,31 @@ def privacy_policy():
 def about():
     return render_template("about.html")
 
-@app.route("/contact")
+@app.route("/contact", methods=["GET", "POST"])
 def contact():
+
+    if request.method == "POST":
+        name = request.form.get("name")
+        email = request.form.get("email")
+        mobile = request.form.get("mobile")
+        message = request.form.get("message")
+
+        full_message = f"""
+New Contact Form Submission:
+
+Name: {name}
+Email: {email}
+Mobile: {mobile}
+
+Message:
+{message}
+"""
+
+        send_email("timeshare.co@gmail.com", "New Contact Message", full_message)
+
+        flash("Message sent successfully!", "success")
+        return redirect("/contact")
+
     return render_template("contact.html")
 # ================= SERVER START =================
 

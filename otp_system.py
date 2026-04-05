@@ -59,18 +59,23 @@ def forgot_password():
             last_time = otp_store[email].get("time", 0)
             attempts = otp_store[email].get("attempts", 0)
 
-            # 60 sec cooldown
+
             if time.time() - last_time < 60:
                 flash("Wait 60 seconds before requesting OTP again", "warning")
                 return redirect(request.url)
 
-            # max 3 attempts
+
             if attempts >= 3:
                 flash("Too many OTP requests. Try later.", "danger")
                 return redirect(request.url)
 
-        # ✅ Generate OTP
+        # ✅ FIX — OTP generate
+        from otp_system import generate_otp
         otp = generate_otp()
+
+        # ✅ TEMP DEBUG (screen pe dikhega)
+        print("FORGOT OTP:", otp)
+        flash(f"Your OTP is {otp}", "info")
 
         # ✅ Store OTP
         otp_store[email] = {
@@ -79,10 +84,9 @@ def forgot_password():
             "attempts": otp_store.get(email, {}).get("attempts", 0) + 1
         }
 
-        from app import send_email
-        success = send_email(email, "Password Reset OTP", f"Your OTP is {otp}")
-
-        print("FORGOT EMAIL SENT:", success)
+        # ✅ EMAIL (async)
+        from app import send_email_async
+        send_email_async(email, "Password Reset OTP", f"Your OTP is {otp}")
 
         flash("OTP sent to your email!", "info")
         return redirect(f"/reset-password?email={email}")

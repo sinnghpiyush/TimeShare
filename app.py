@@ -45,30 +45,34 @@ RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 
 def send_email(receiver_email, subject, body):
     try:
-        url = "https://api.resend.com/emails"
+        import smtplib
+        from email.mime.text import MIMEText
 
-        headers = {
-            "Authorization": f"Bearer {RESEND_API_KEY}",
-            "Content-Type": "application/json"
-        }
+        msg = MIMEText(body)
+        msg["Subject"] = subject
+        msg["From"] = EMAIL_ADDRESS
+        msg["To"] = receiver_email
 
-        data = {
-            "from": "onboarding@resend.dev",   # free default sender
-            "to": [receiver_email],
-            "subject": subject,
-            "html": f"<p>{body}</p>"
-        }
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
+        server.starttls()
+        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        server.sendmail(EMAIL_ADDRESS, receiver_email, msg.as_string())
+        server.quit()
 
-        response = requests.post(url, headers=headers, json=data)
-
-        print("RESEND STATUS:", response.status_code)
-        print("RESEND RESPONSE:", response.text)
-
-        return response.status_code == 200
+        print("EMAIL SENT SUCCESS")
+        return True
 
     except Exception as e:
         print("EMAIL ERROR:", e)
         return False
+
+import threading
+
+def send_email_async(receiver_email, subject, body):
+    threading.Thread(
+        target=send_email,
+        args=(receiver_email, subject, body)
+    ).start()
 
 @app.route("/")
 def home():

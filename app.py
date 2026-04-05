@@ -2,16 +2,20 @@ from flask_socketio import SocketIO, emit, join_room
 import time
 from dotenv import load_dotenv
 load_dotenv()
+
 from otp_system import otp_bp, otp_store, generate_otp
 from routes.api_routes import api
 from routes.admin_routes import admin
 from config import get_db_connection
 from routes.auth_routes import auth
+
 import os
 import razorpay
 import random
+import requests   # ✅ NEW (IMPORTANT)
 
 orders = []
+
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, session, redirect, flash
 import mysql.connector
@@ -19,64 +23,51 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 
 app = Flask(__name__)
+
 razorpay_client = razorpay.Client(auth=("rzp_test_SXE4YziLjpjNKg", "0wBEpp2w7GLaD0XRt19HdA43"))
 socketio = SocketIO(app)
+
 app.register_blueprint(auth)
 app.register_blueprint(admin)
 app.register_blueprint(api)
 app.register_blueprint(otp_bp)
+
 app.secret_key = "netpiyush847818"
+
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB limit
-EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
+
+
+# ================= EMAIL SYSTEM (RESEND API) =================
+
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 
 
 def send_email(receiver_email, subject, body):
     try:
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_ADDRESS
-        msg["To"] = receiver_email
-        msg["Subject"] = subject
+        url = "https://api.resend.com/emails"
 
-        msg.attach(MIMEText(body, "plain"))
+        headers = {
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json"
+        }
 
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.starttls()
-        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-        server.sendmail(EMAIL_ADDRESS, receiver_email, msg.as_string())
-        server.quit()
+        data = {
+            "from": "onboarding@resend.dev",   # free default sender
+            "to": [receiver_email],
+            "subject": subject,
+            "html": f"<p>{body}</p>"
+        }
 
-    except Exception as e:
-        print("Email sending failed:", e)
+        response = requests.post(url, headers=headers, json=data)
 
-SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL")
-SUPPORT_PASSWORD = os.getenv("SUPPORT_PASSWORD")
+        print("RESEND STATUS:", response.status_code)
+        print("RESEND RESPONSE:", response.text)
 
-def send_support_email(receiver_email, subject, body):
-    try:
-        print("DEBUG EMAIL:", SUPPORT_EMAIL)
-        print("DEBUG PASS:", SUPPORT_PASSWORD)
-
-        msg = MIMEMultipart()
-        msg["From"] = SUPPORT_EMAIL
-        msg["To"] = receiver_email
-        msg["Subject"] = subject
-
-        msg.attach(MIMEText(body, "plain"))
-
-        # 🔥 TIMEOUT + SAFE CONNECTION
-        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
-        server.starttls()
-        server.login(SUPPORT_EMAIL, SUPPORT_PASSWORD)
-        server.sendmail(SUPPORT_EMAIL, receiver_email, msg.as_string())
-        server.quit()
-
-        print("✅ EMAIL SENT SUCCESS")
-        return True
+        return response.status_code == 200
 
     except Exception as e:
-        print("❌ SUPPORT EMAIL ERROR:", e)
+        print("EMAIL ERROR:", e)
         return False
 
 @app.route("/")
@@ -1194,7 +1185,7 @@ Message:
 {message}
 """
 
-            result = send_support_email(
+            result = send_email(
                 "support.timeshare.co@gmail.com",
                 "New Contact Message",
                 full_message
@@ -1378,7 +1369,7 @@ def submit_test(test_type):
 
 @app.route("/test-mail")
 def test_mail():
-    result = send_support_email(
+    result = send_email(
         "your_personal_email@gmail.com",
         "Test Mail",
         "Hello bhai test ho raha hai"

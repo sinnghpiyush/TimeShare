@@ -75,8 +75,7 @@ def forgot_password():
 
         # ✅ TEMP DEBUG (screen pe dikhega)
         print("FORGOT OTP:", otp)
-        flash(f"Your OTP is {otp}", "info")
-
+        
         # ✅ Store OTP
         otp_store[email] = {
             "otp": otp,

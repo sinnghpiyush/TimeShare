@@ -42,7 +42,6 @@ app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 
-
 def send_email(receiver_email, subject, body):
     try:
         import smtplib
@@ -53,7 +52,7 @@ def send_email(receiver_email, subject, body):
         msg["From"] = EMAIL_ADDRESS
         msg["To"] = receiver_email
 
-        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=5)
         server.starttls()
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         server.sendmail(EMAIL_ADDRESS, receiver_email, msg.as_string())
@@ -66,13 +65,12 @@ def send_email(receiver_email, subject, body):
         print("EMAIL ERROR:", e)
         return False
 
-import threading
-
-def send_email_async(receiver_email, subject, body):
-    threading.Thread(
+    def send_email_async(receiver_email, subject, body):
+        import threading
+        threading.Thread(
         target=send_email,
         args=(receiver_email, subject, body)
-    ).start()
+        ).start()
 
 @app.route("/")
 def home():

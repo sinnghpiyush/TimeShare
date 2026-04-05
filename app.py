@@ -1373,6 +1373,15 @@ def submit_test(test_type):
             score += 1
 
     return render_template("result.html", score=score, total=len(questions))
+
+@app.route("/test-mail")
+def test_mail():
+    result = send_support_email(
+        "your_personal_email@gmail.com",
+        "Test Mail",
+        "Hello bhai test ho raha hai"
+    )
+    return "Success" if result else "Failed"
 # ================= SERVER START =================
 
 if __name__ == "__main__":

@@ -80,7 +80,9 @@ def forgot_password():
         }
 
         from app import send_email
-        send_email(email, "Password Reset OTP", f"Your OTP is {otp}")
+        success = send_email(email, "Password Reset OTP", f"Your OTP is {otp}")
+
+        print("FORGOT EMAIL SENT:", success)
 
         flash("OTP sent to your email!", "info")
         return redirect(f"/reset-password?email={email}")

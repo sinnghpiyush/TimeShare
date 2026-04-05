@@ -59,7 +59,9 @@ def register():
 
             # OTP send
             from app import send_email
-            send_email(email, "OTP Verification - TimeShare", f"Your OTP is {otp}")
+            success = send_email(email, "OTP Verification - TimeShare", f"Your OTP is {otp}")
+
+            print("REGISTER EMAIL SENT:", success)
 
             flash("OTP sent to your email!", "info")
             return redirect(f"/verify-otp?email={email}")

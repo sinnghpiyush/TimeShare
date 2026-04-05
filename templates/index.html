@@ -194,8 +194,6 @@ Read More →
 
 <div class="join-panel">
 
-<h4 class="fw-bold mb-4">Join Now</h4>
-
 <a href="/register" class="btn btn-lg w-100 mb-3 join-register">
 Register
 </a>
@@ -204,46 +202,143 @@ Register
 Login
 </a>
 
-</div>
+<div class="mt-4 text-center">
+
+    <a href="/test/career" class="test-btn career-btn">
+        🚀 TAKE YOUR CAREER TEST
+    </a>
+
+    <a href="/test/iq" class="test-btn iq-btn">
+        🧠 TAKE YOUR IQ TEST
+    </a>
+
+    <a href="/test/aptitude" class="test-btn aptitude-btn">
+        📊 TAKE YOUR APTITUDE TEST
+    </a>
 
 </div>
 
 </div>
 
+</div>
+
+</div>
+
+<style>
+
+.test-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    margin-bottom: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 12px;
+    text-decoration: none;
+    color: white;
+    transition: 0.3s;
+
+    /* 🔥 COMBINED ANIMATION */
+    animation: shake 2s infinite, pulse 2s infinite;
+}
+
+/* 🔥 Strong contrast colors */
+.career-btn {
+    background: linear-gradient(45deg, #f90d44, #000000);
+}
+
+.iq-btn {
+    background: linear-gradient(45deg, #0a2bff, #00d819);
+}
+
+.aptitude-btn {
+    background: linear-gradient(45deg, #05bfaf, #ac00fc);
+}
+
+/* Hover effect */
+.test-btn:hover {
+    transform: scale(1.05);
+}
+
+/* 🔥 Shake animation */
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    50% { transform: translateX(3px); }
+    75% { transform: translateX(-3px); }
+    100% { transform: translateX(0); }
+}
+
+/* Apply animation */
+.test-btn {
+    animation: shake 1s infinite;
+}
+
+@keyframes smoothShakePulse {
+    0%   { transform: translateX(0px) scale(1); }
+    10%  { transform: translateX(-4px) scale(1.02); }
+    20%  { transform: translateX(3px) scale(1.03); }
+    30%  { transform: translateX(-4px) scale(1.04); }
+    40%  { transform: translateX(3px) scale(1.05); }
+    50%  { transform: translateX(0px) scale(1.06); }
+    60%  { transform: translateX(3px) scale(1.05); }
+    70%  { transform: translateX(-4px) scale(1.04); }
+    80%  { transform: translateX(3px) scale(1.03); }
+    90%  { transform: translateX(-4px) scale(1.02); }
+    100% { transform: translateX(0px) scale(1); }
+}
+
+/* Base */
+.test-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    margin-bottom: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 12px;
+    text-decoration: none;
+    color: white;
+
+    will-change: transform;
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* 🔥 HOVER JELLY */
+.test-btn:hover {
+    animation: jelly 0.6s ease forwards;
+}
+
+/* 🔥 CLICK (PRESS EFFECT) */
+.test-btn:active {
+    animation: jellyClick 0.3s ease;
+}
+
+/* Jelly animation (grow + wobble) */
+@keyframes jelly {
+    0%   { transform: scale(1,1); }
+    30%  { transform: scale(1.5, 1.3); }
+    40%  { transform: scale(1.3, 1.5); }
+    50%  { transform: scale(1.45, 1.35); }
+    65%  { transform: scale(1.38, 1.42); }
+    75%  { transform: scale(1.48, 1.36); }
+    100% { transform: scale(1.5, 1.5); }
+}
+
+/* Click bounce */
+@keyframes jellyClick {
+    0%   { transform: scale(1.5); }
+    50%  { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.join-panel{
+    position: sticky;
+    top: 40px;
+}
+</style>
 <!-- SOCIAL SECTION -->
-
-<div class="social-panel">
-
-<h4 class="fw-bold mb-3">
-Connect With Us
-</h4>
-
-<p style="opacity:.8">
-Follow TimeShare
-</p>
-
-<div class="social-buttons">
-
-<a href="https://www.linkedin.com/in/sinnghpiyush"
-target="_blank"
-class="social-btn linkedin-btn">
-LinkedIn
-</a>
-
-<a href="https://www.instagram.com/sinnghpiyush?igsh=MXJzZ25qMHI4cjVzNg=="
-target="_blank"
-class="social-btn instagram-btn">
-Instagram
-</a>
-
-<a href="https://t.me/sinnghpiyush01"
-target="_blank"
-class="social-btn telegram-btn">
-Telegram
-</a>
-
-</div>
-
-</div>
-
+ 
 {% endblock %}

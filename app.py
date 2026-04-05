@@ -1,4 +1,8 @@
 from flask_socketio import SocketIO, emit, join_room
+import time
+from dotenv import load_dotenv
+load_dotenv()
+from otp_system import otp_bp, otp_store, generate_otp
 from routes.api_routes import api
 from routes.admin_routes import admin
 from config import get_db_connection
@@ -23,11 +27,12 @@ socketio = SocketIO(app)
 app.register_blueprint(auth)
 app.register_blueprint(admin)
 app.register_blueprint(api)
+app.register_blueprint(otp_bp)
 app.secret_key = "netpiyush847818"
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB limit
-EMAIL_ADDRESS = "timeshare.co@gmail.com"
-EMAIL_PASSWORD = "hvonqjxwtjsgapyo"
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 
 
 def send_email(receiver_email, subject, body):
@@ -48,6 +53,26 @@ def send_email(receiver_email, subject, body):
     except Exception as e:
         print("Email sending failed:", e)
 
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL")
+SUPPORT_PASSWORD = os.getenv("SUPPORT_PASSWORD")
+
+def send_support_email(receiver_email, subject, body):
+    try:
+        msg = MIMEMultipart()
+        msg["From"] = SUPPORT_EMAIL
+        msg["To"] = receiver_email
+        msg["Subject"] = subject
+
+        msg.attach(MIMEText(body, "plain"))
+
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(SUPPORT_EMAIL, SUPPORT_PASSWORD)
+        server.sendmail(SUPPORT_EMAIL, receiver_email, msg.as_string())
+        server.quit()
+
+    except Exception as e:
+        print("Support Email failed:", e)
 
 @app.route("/")
 def home():
@@ -78,37 +103,7 @@ def home():
     db.close()
 
     return render_template("index.html", blogs=blogs)
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        name = request.form["name"]
-        email = request.form["email"]
-        password = generate_password_hash(request.form["password"])
-        role = request.form["role"]
-
-        db = get_db_connection()
-        cursor = db.cursor(buffered=True)
-
-        try:
-            sql = "INSERT INTO users (name, email, password, role) VALUES (%s, %s, %s, %s)"
-            values = (name, email, password, role)
-            cursor.execute(sql, values)
-            db.commit()
-
-            flash("Registration Successful! 🎉 Please login.", "success")
-            return redirect("/login")
-
-        except mysql.connector.Error:
-            flash("Email already registered! ⚠", "danger")
-            return redirect("/register")
-
-        finally:
-            cursor.close()
-            db.close()
-
-    return render_template("register.html")
-
+    
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -134,7 +129,8 @@ def login():
             flash("Login Successful! 🚀", "success")
 
             if session.get("role", "").strip().lower() == "admin":
-                return redirect("/admin")
+                flash("Use secure admin login 🚫", "warning")
+                return redirect("/admin-secure-login")
 
             return redirect("/dashboard")
         else:
@@ -142,6 +138,90 @@ def login():
             return redirect("/login")
 
     return render_template("login.html")
+
+ADMIN_EMAIL = "kumarpiyush.it@gmail.com"
+ADMIN_SECURITY_KEY = "5213698521"
+
+admin_otp_store = {}
+
+@app.route("/admin-secure-login", methods=["GET", "POST"])
+def admin_secure_login():
+
+    if request.method == "POST":
+        email = request.form.get("email")
+
+        # ❌ wrong admin email
+        if email != ADMIN_EMAIL:
+            flash("Invalid Admin Email ❌", "danger")
+            return redirect("/admin-secure-login")
+
+        import time
+
+        # ✅ Rate limit check
+        if email in otp_store:
+            last_time = otp_store[email].get("time", 0)
+            attempts = otp_store[email].get("attempts", 0)
+
+            # 60 sec cooldown
+            if time.time() - last_time < 60:
+                flash("Wait 60 seconds before requesting OTP again", "warning")
+                return redirect(request.url)
+
+            # max 3 attempts
+            if attempts >= 3:
+                flash("Too many OTP requests. Try later.", "danger")
+                return redirect(request.url)
+
+        # ✅ Generate OTP
+        otp = generate_otp()
+
+        # ✅ Store OTP
+        otp_store[email] = {
+            "otp": otp,
+            "time": time.time(),
+            "attempts": otp_store.get(email, {}).get("attempts", 0) + 1
+        }
+
+        # optional (अगर use कर रहे हो)
+        admin_otp_store[email] = otp
+
+        send_email(email, "Admin Login OTP", f"Your OTP is {otp}")
+
+        return redirect(f"/admin-verify-otp?email={email}")
+
+    return render_template("admin_login.html")
+
+@app.route("/admin-verify-otp", methods=["GET", "POST"])
+def admin_verify_otp():
+
+    email = request.args.get("email")
+
+    if request.method == "POST":
+        entered_otp = request.form.get("otp")
+
+        if admin_otp_store.get(email) == entered_otp:
+            return redirect(f"/admin-key?email={email}")
+        else:
+            flash("Invalid OTP ❌", "danger")
+
+    return render_template("admin_verify_otp.html")
+
+@app.route("/admin-key", methods=["GET", "POST"])
+def admin_key():
+
+    if request.method == "POST":
+        key = request.form.get("key")
+
+        if key == ADMIN_SECURITY_KEY:
+
+            session["admin_secure"] = True
+            flash("Admin Login Successful 🔥", "success")
+            return redirect("/admin")
+
+        else:
+            flash("Invalid Security Key ❌", "danger")
+
+    return render_template("admin_key.html")
 
 @app.route("/dashboard")
 def dashboard():
@@ -822,8 +902,8 @@ def place_order():
     cursor = db.cursor()
 
     cursor.execute(
-        "INSERT INTO orders (id, name, product, status) VALUES (%s, %s, %s, %s)",
-        (order_id, name, product, "Placed")
+        "INSERT INTO orders (id, user_id, name, product, status) VALUES (%s, %s, %s, %s, %s)",
+        (order_id, session["user_id"], name, product, "Placed")
     )
 
     db.commit()
@@ -862,7 +942,7 @@ def orders_page():
     db = get_db_connection()
     cursor = db.cursor(dictionary=True, buffered=True)
 
-    cursor.execute("SELECT * FROM orders")
+    cursor.execute("SELECT * FROM orders WHERE user_id=%s", (session["user_id"],))
     orders_data = cursor.fetchall()
 
     cursor.close()
@@ -904,9 +984,14 @@ def admin_orders_page():
     cursor = db.cursor(dictionary=True, buffered=True)
 
     if search_order:
-        cursor.execute("SELECT * FROM orders WHERE id = %s", (search_order,))
+        cursor.execute(
+            "SELECT * FROM orders WHERE id = %s",
+            (search_order,)
+        )
     else:
-        cursor.execute("SELECT * FROM orders")
+        cursor.execute(
+            "SELECT * FROM orders",
+        )
         
     orders = cursor.fetchall()
 
@@ -918,9 +1003,33 @@ def admin_orders_page():
 @app.route("/cancel/<int:order_id>")
 def cancel_order(order_id):
 
-    db = get_db_connection()
-    cursor = db.cursor()
+    if "user_id" not in session:
+        return redirect("/login")
 
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True, buffered=True)
+
+    # Step 1: Order fetch (sirf apna hi)
+    cursor.execute(
+        "SELECT * FROM orders WHERE id = %s AND user_id = %s",
+        (order_id, session["user_id"])
+    )
+    order = cursor.fetchone()
+
+    # Step 2: Agar order nahi mila
+    if not order:
+        cursor.close()
+        db.close()
+        return "Order not found"
+
+    # Step 3: Status check
+    if order["status"] != "Placed":
+        cursor.close()
+        db.close()
+        flash("Order cannot be cancelled now!", "danger")
+        return redirect("/orders")
+
+    # Step 4: Cancel allowed
     cursor.execute(
         "UPDATE orders SET status = %s WHERE id = %s",
         ("Cancelled", order_id)
@@ -936,14 +1045,23 @@ def cancel_order(order_id):
 @app.route("/track/<int:order_id>")
 def track_order(order_id):
 
+    if "user_id" not in session:
+        return redirect("/login")
+
     db = get_db_connection()
     cursor = db.cursor(dictionary=True, buffered=True)
 
-    cursor.execute("SELECT * FROM orders WHERE id = %s", (order_id,))
+    cursor.execute(
+        "SELECT * FROM orders WHERE id = %s AND user_id = %s",
+        (order_id, session["user_id"])
+    )
     order = cursor.fetchone()
 
     cursor.close()
     db.close()
+
+    if not order:
+        return "Order not found or access denied"
 
     return render_template("track.html", order=order)
 
@@ -1070,12 +1188,175 @@ Message:
 {message}
 """
 
-        send_email("timeshare.co@gmail.com", "New Contact Message", full_message)
+        send_support_email("support.timeshare.co@gmail.com", "New Contact Message", full_message)
 
         flash("Message sent successfully!", "success")
         return redirect("/contact")
 
     return render_template("contact.html")
+
+@app.route("/test/<test_type>")
+def test_page(test_type):
+
+    tests = {
+        "career": [
+            {"q": "What excites you the most?", "options": ["Building apps", "Helping people", "Selling ideas", "Designing visuals"], "answer": "Building apps"},
+            {"q": "You prefer working:", "options": ["Independently", "In a team", "Flexible environment", "Leadership role"], "answer": "Independently"},
+            {"q": "Your strength is:", "options": ["Logic", "Communication", "Creativity", "Management"], "answer": "Logic"},
+            {"q": "Which activity do you enjoy?", "options": ["Coding", "Public speaking", "Drawing", "Planning"], "answer": "Coding"},
+            {"q": "What motivates you?", "options": ["Money", "Impact", "Recognition", "Learning"], "answer": "Learning"},
+            {"q": "Which role suits you?", "options": ["Developer", "Teacher", "Entrepreneur", "Designer"], "answer": "Developer"},
+            {"q": "You like solving:", "options": ["Technical problems", "People issues", "Business challenges", "Creative tasks"], "answer": "Technical problems"},
+            {"q": "Favorite environment:", "options": ["Office", "Remote", "Hybrid", "Startup"], "answer": "Remote"},
+            {"q": "You enjoy:", "options": ["Analyzing", "Talking", "Creating", "Leading"], "answer": "Analyzing"},
+            {"q": "Decision making:", "options": ["Data-driven", "Emotional", "Creative", "Quick"], "answer": "Data-driven"},
+            {"q": "Your goal:", "options": ["Job", "Startup", "Freelancing", "Research"], "answer": "Startup"},
+            {"q": "You prefer learning:", "options": ["Online", "Offline", "Hands-on", "Books"], "answer": "Hands-on"},
+            {"q": "Your interest:", "options": ["Tech", "Education", "Business", "Art"], "answer": "Tech"},
+            {"q": "You handle pressure by:", "options": ["Thinking", "Talking", "Creating", "Planning"], "answer": "Thinking"},
+            {"q": "Best quality:", "options": ["Focus", "Communication", "Creativity", "Leadership"], "answer": "Focus"},
+            {"q": "You prefer:", "options": ["Stability", "Risk", "Innovation", "Routine"], "answer": "Innovation"},
+            {"q": "You enjoy learning:", "options": ["New tech", "Human behavior", "Market trends", "Design tools"], "answer": "New tech"},
+            {"q": "You want to become:", "options": ["Engineer", "Mentor", "Founder", "Designer"], "answer": "Engineer"},
+            {"q": "Work style:", "options": ["Structured", "Flexible", "Creative", "Fast-paced"], "answer": "Flexible"},
+            {"q": "Future goal:", "options": ["High salary", "Impact", "Freedom", "Recognition"], "answer": "Freedom"}
+        ],
+
+        "iq": [
+            {"q": "2 + 2 × 2 = ?", "options": ["6", "8", "4", "10"], "answer": "6"},
+            {"q": "Find next: 3, 6, 12, 24 ?", "options": ["36", "48", "30", "60"], "answer": "48"},
+            {"q": "Odd one out:", "options": ["Dog", "Cat", "Tiger", "Car"], "answer": "Car"},
+            {"q": "Mirror of 12:21?", "options": ["12:21", "21:12", "11:22", "22:11"], "answer": "12:21"},
+            {"q": "5² = ?", "options": ["10", "25", "20", "15"], "answer": "25"},
+            {"q": "Which is largest?", "options": ["0.5", "0.05", "0.005", "0.55"], "answer": "0.55"},
+            {"q": "Complete: A, C, E, ?", "options": ["F", "G", "H", "I"], "answer": "G"},
+            {"q": "7 + 8 = ?", "options": ["15", "16", "14", "17"], "answer": "15"},
+            {"q": "9 × 9 = ?", "options": ["81", "72", "99", "90"], "answer": "81"},
+            {"q": "Binary of 2?", "options": ["10", "11", "01", "00"], "answer": "10"},
+            {"q": "Opposite of hot?", "options": ["Cold", "Warm", "Cool", "Heat"], "answer": "Cold"},
+            {"q": "10/2 = ?", "options": ["5", "2", "10", "4"], "answer": "5"},
+            {"q": "Find next: 1,1,2,3,5 ?", "options": ["6", "7", "8", "10"], "answer": "8"},
+            {"q": "Square root of 16?", "options": ["2", "4", "6", "8"], "answer": "4"},
+            {"q": "Odd number:", "options": ["2", "4", "6", "7"], "answer": "7"},
+            {"q": "Half of 100?", "options": ["50", "40", "60", "70"], "answer": "50"},
+            {"q": "100-25=?", "options": ["75", "80", "65", "70"], "answer": "75"},
+            {"q": "Which is even?", "options": ["3", "5", "8", "9"], "answer": "8"},
+            {"q": "Next: 2,4,6,8?", "options": ["9", "10", "12", "11"], "answer": "10"},
+            {"q": "10×0=?", "options": ["0", "10", "1", "None"], "answer": "0"}
+        ],
+
+        "aptitude": [
+            {"q": "10% of 500?", "options": ["50", "100", "25", "75"], "answer": "50"},
+            {"q": "Speed = ?", "options": ["Distance/Time", "Time/Distance", "Work/Time", "Distance×Time"], "answer": "Distance/Time"},
+            {"q": "5+15=?", "options": ["20", "25", "10", "30"], "answer": "20"},
+            {"q": "Simple interest formula?", "options": ["P×R×T/100", "P+R+T", "P×T", "R×T"], "answer": "P×R×T/100"},
+            {"q": "Time = ?", "options": ["Distance/Speed", "Speed×Distance", "Work×Time", "Distance+Speed"], "answer": "Distance/Speed"},
+            {"q": "25% of 200?", "options": ["50", "25", "75", "100"], "answer": "50"},
+            {"q": "LCM of 2 and 3?", "options": ["6", "5", "3", "2"], "answer": "6"},
+            {"q": "HCF of 6 and 9?", "options": ["3", "6", "9", "1"], "answer": "3"},
+            {"q": "Profit = ?", "options": ["SP-CP", "CP-SP", "SP+CP", "CP×SP"], "answer": "SP-CP"},
+            {"q": "Loss = ?", "options": ["CP-SP", "SP-CP", "SP+CP", "CP×SP"], "answer": "CP-SP"},
+            {"q": "Ratio 2:4=?", "options": ["1:2", "2:1", "4:2", "3:2"], "answer": "1:2"},
+            {"q": "Average of 10,20?", "options": ["15", "20", "10", "25"], "answer": "15"},
+            {"q": "Distance = ?", "options": ["Speed×Time", "Time/Speed", "Work×Time", "Speed/Time"], "answer": "Speed×Time"},
+            {"q": "100÷4=?", "options": ["25", "20", "30", "40"], "answer": "25"},
+            {"q": "5×6=?", "options": ["30", "25", "20", "35"], "answer": "30"},
+            {"q": "Discount = ?", "options": ["MP-SP", "SP-MP", "SP+MP", "MP×SP"], "answer": "MP-SP"},
+            {"q": "12×12=?", "options": ["144", "124", "132", "156"], "answer": "144"},
+            {"q": "Time & Work basic:", "options": ["Work/Time", "Time/Work", "Speed/Time", "Distance/Time"], "answer": "Work/Time"},
+            {"q": "10²=?", "options": ["100", "10", "20", "50"], "answer": "100"},
+            {"q": "200-100=?", "options": ["100", "50", "150", "200"], "answer": "100"}
+        ]
+    }
+
+    if test_type not in tests:
+        return "Invalid Test"
+
+    return render_template("test.html", questions=tests[test_type], test_type=test_type)
+
+@app.route("/submit-test/<test_type>", methods=["POST"])
+def submit_test(test_type):
+
+    tests = {
+        "career": [
+            {"q": "What excites you the most?", "options": ["Building apps", "Helping people", "Selling ideas", "Designing visuals"], "answer": "Building apps"},
+            {"q": "You prefer working:", "options": ["Independently", "In a team", "Flexible environment", "Leadership role"], "answer": "Independently"},
+            {"q": "Your strength is:", "options": ["Logic", "Communication", "Creativity", "Management"], "answer": "Logic"},
+            {"q": "Which activity do you enjoy?", "options": ["Coding", "Public speaking", "Drawing", "Planning"], "answer": "Coding"},
+            {"q": "What motivates you?", "options": ["Money", "Impact", "Recognition", "Learning"], "answer": "Learning"},
+            {"q": "Which role suits you?", "options": ["Developer", "Teacher", "Entrepreneur", "Designer"], "answer": "Developer"},
+            {"q": "You like solving:", "options": ["Technical problems", "People issues", "Business challenges", "Creative tasks"], "answer": "Technical problems"},
+            {"q": "Favorite environment:", "options": ["Office", "Remote", "Hybrid", "Startup"], "answer": "Remote"},
+            {"q": "You enjoy:", "options": ["Analyzing", "Talking", "Creating", "Leading"], "answer": "Analyzing"},
+            {"q": "Decision making:", "options": ["Data-driven", "Emotional", "Creative", "Quick"], "answer": "Data-driven"},
+            {"q": "Your goal:", "options": ["Job", "Startup", "Freelancing", "Research"], "answer": "Startup"},
+            {"q": "You prefer learning:", "options": ["Online", "Offline", "Hands-on", "Books"], "answer": "Hands-on"},
+            {"q": "Your interest:", "options": ["Tech", "Education", "Business", "Art"], "answer": "Tech"},
+            {"q": "You handle pressure by:", "options": ["Thinking", "Talking", "Creating", "Planning"], "answer": "Thinking"},
+            {"q": "Best quality:", "options": ["Focus", "Communication", "Creativity", "Leadership"], "answer": "Focus"},
+            {"q": "You prefer:", "options": ["Stability", "Risk", "Innovation", "Routine"], "answer": "Innovation"},
+            {"q": "You enjoy learning:", "options": ["New tech", "Human behavior", "Market trends", "Design tools"], "answer": "New tech"},
+            {"q": "You want to become:", "options": ["Engineer", "Mentor", "Founder", "Designer"], "answer": "Engineer"},
+            {"q": "Work style:", "options": ["Structured", "Flexible", "Creative", "Fast-paced"], "answer": "Flexible"},
+            {"q": "Future goal:", "options": ["High salary", "Impact", "Freedom", "Recognition"], "answer": "Freedom"}
+        ],
+
+        "iq": [
+            {"q": "2 + 2 × 2 = ?", "options": ["6", "8", "4", "10"], "answer": "6"},
+            {"q": "Find next: 3, 6, 12, 24 ?", "options": ["36", "48", "30", "60"], "answer": "48"},
+            {"q": "Odd one out:", "options": ["Dog", "Cat", "Tiger", "Car"], "answer": "Car"},
+            {"q": "Mirror of 12:21?", "options": ["12:21", "21:12", "11:22", "22:11"], "answer": "12:21"},
+            {"q": "5² = ?", "options": ["10", "25", "20", "15"], "answer": "25"},
+            {"q": "Which is largest?", "options": ["0.5", "0.05", "0.005", "0.55"], "answer": "0.55"},
+            {"q": "Complete: A, C, E, ?", "options": ["F", "G", "H", "I"], "answer": "G"},
+            {"q": "7 + 8 = ?", "options": ["15", "16", "14", "17"], "answer": "15"},
+            {"q": "9 × 9 = ?", "options": ["81", "72", "99", "90"], "answer": "81"},
+            {"q": "Binary of 2?", "options": ["10", "11", "01", "00"], "answer": "10"},
+            {"q": "Opposite of hot?", "options": ["Cold", "Warm", "Cool", "Heat"], "answer": "Cold"},
+            {"q": "10/2 = ?", "options": ["5", "2", "10", "4"], "answer": "5"},
+            {"q": "Find next: 1,1,2,3,5 ?", "options": ["6", "7", "8", "10"], "answer": "8"},
+            {"q": "Square root of 16?", "options": ["2", "4", "6", "8"], "answer": "4"},
+            {"q": "Odd number:", "options": ["2", "4", "6", "7"], "answer": "7"},
+            {"q": "Half of 100?", "options": ["50", "40", "60", "70"], "answer": "50"},
+            {"q": "100-25=?", "options": ["75", "80", "65", "70"], "answer": "75"},
+            {"q": "Which is even?", "options": ["3", "5", "8", "9"], "answer": "8"},
+            {"q": "Next: 2,4,6,8?", "options": ["9", "10", "12", "11"], "answer": "10"},
+            {"q": "10×0=?", "options": ["0", "10", "1", "None"], "answer": "0"}
+        ],
+
+        "aptitude": [
+            {"q": "10% of 500?", "options": ["50", "100", "25", "75"], "answer": "50"},
+            {"q": "Speed = ?", "options": ["Distance/Time", "Time/Distance", "Work/Time", "Distance×Time"], "answer": "Distance/Time"},
+            {"q": "5+15=?", "options": ["20", "25", "10", "30"], "answer": "20"},
+            {"q": "Simple interest formula?", "options": ["P×R×T/100", "P+R+T", "P×T", "R×T"], "answer": "P×R×T/100"},
+            {"q": "Time = ?", "options": ["Distance/Speed", "Speed×Distance", "Work×Time", "Distance+Speed"], "answer": "Distance/Speed"},
+            {"q": "25% of 200?", "options": ["50", "25", "75", "100"], "answer": "50"},
+            {"q": "LCM of 2 and 3?", "options": ["6", "5", "3", "2"], "answer": "6"},
+            {"q": "HCF of 6 and 9?", "options": ["3", "6", "9", "1"], "answer": "3"},
+            {"q": "Profit = ?", "options": ["SP-CP", "CP-SP", "SP+CP", "CP×SP"], "answer": "SP-CP"},
+            {"q": "Loss = ?", "options": ["CP-SP", "SP-CP", "SP+CP", "CP×SP"], "answer": "CP-SP"},
+            {"q": "Ratio 2:4=?", "options": ["1:2", "2:1", "4:2", "3:2"], "answer": "1:2"},
+            {"q": "Average of 10,20?", "options": ["15", "20", "10", "25"], "answer": "15"},
+            {"q": "Distance = ?", "options": ["Speed×Time", "Time/Speed", "Work×Time", "Speed/Time"], "answer": "Speed×Time"},
+            {"q": "100÷4=?", "options": ["25", "20", "30", "40"], "answer": "25"},
+            {"q": "5×6=?", "options": ["30", "25", "20", "35"], "answer": "30"},
+            {"q": "Discount = ?", "options": ["MP-SP", "SP-MP", "SP+MP", "MP×SP"], "answer": "MP-SP"},
+            {"q": "12×12=?", "options": ["144", "124", "132", "156"], "answer": "144"},
+            {"q": "Time & Work basic:", "options": ["Work/Time", "Time/Work", "Speed/Time", "Distance/Time"], "answer": "Work/Time"},
+            {"q": "10²=?", "options": ["100", "10", "20", "50"], "answer": "100"},
+            {"q": "200-100=?", "options": ["100", "50", "150", "200"], "answer": "100"}
+        ]
+    }
+
+    questions = tests.get(test_type)
+    score = 0
+
+    for i, q in enumerate(questions):
+        user_ans = request.form.get(f"q{i}")
+        if user_ans == q["answer"]:
+            score += 1
+
+    return render_template("result.html", score=score, total=len(questions))
 # ================= SERVER START =================
 
 if __name__ == "__main__":

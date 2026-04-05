@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 class="text-center mb-4">Admin Secure Login 🔐</h2>
+
+<div class="card p-4 mx-auto" style="max-width:400px;">
+
+<form method="POST">
+
+<div class="mb-3">
+<label class="form-label">Admin Email</label>
+<input type="email" name="email" class="form-control" placeholder="Enter Admin Email" required>
+</div>
+
+<button class="btn btn-primary w-100">
+Send OTP 🚀
+</button>
+
+</form>
+
+</div>
+
+{% endblock %}

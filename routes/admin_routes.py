@@ -14,12 +14,8 @@ def admin_panel():
     search_booking = request.args.get("search_booking")
     search_blog = request.args.get("search_blog")
 
-    if "user_id" not in session:
-        return redirect("/login")
-
-    if session.get("role", "").strip().lower() != "admin":
-        flash("Access Denied!", "danger")
-        return redirect("/dashboard")
+    if "admin_secure" not in session:
+        return redirect("/admin-secure-login")
 
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
@@ -89,8 +85,8 @@ def admin_panel():
 @admin.route("/add-blog", methods=["POST"])
 def add_blog():
 
-    if "user_id" not in session:
-        return redirect("/login")
+    if "admin_secure" not in session:
+        return redirect("/admin-secure-login")
 
     if session.get("role","").lower() != "admin":
         return redirect("/dashboard")

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-5">
+    <div class="card p-4 text-center">
+
+        <h3 class="mb-3">Verify OTP</h3>
+
+        <p>OTP sent to your email</p>
+
+        <form method="POST">
+
+            <input 
+                type="text" 
+                name="otp" 
+                class="form-control mb-3" 
+                placeholder="Enter 6-digit OTP" 
+                required
+            >
+
+            <button class="btn btn-success w-100">
+                Verify OTP
+            </button>
+
+        </form>
+
+        <form method="POST" action="/resend-otp">
+    <input type="hidden" name="email" value="{{ email }}">
+
+    <button id="resendBtn" type="submit" class="btn btn-warning mt-3 w-100" disabled>
+        Resend OTP (60s)
+    </button>
+</form>
+
+<p id="timerText" class="text-center mt-2" style="opacity:0.7;">
+    You can resend OTP in 60 seconds
+</p>
+
+    </div>
+</div>
+
+<script>
+let timeLeft = 60;
+const btn = document.getElementById("resendBtn");
+const timerText = document.getElementById("timerText");
+
+const countdown = setInterval(() => {
+    timeLeft--;
+
+    btn.innerText = "Resend OTP (" + timeLeft + "s)";
+
+    if (timeLeft <= 0) {
+        clearInterval(countdown);
+        btn.disabled = false;
+        btn.innerText = "Resend OTP";
+        timerText.innerText = "TimeShare";
+    }
+
+}, 1000);
+</script>
+
+{% endblock %}

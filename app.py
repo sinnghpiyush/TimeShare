@@ -58,6 +58,9 @@ SUPPORT_PASSWORD = os.getenv("SUPPORT_PASSWORD")
 
 def send_support_email(receiver_email, subject, body):
     try:
+        print("DEBUG EMAIL:", SUPPORT_EMAIL)
+        print("DEBUG PASS:", SUPPORT_PASSWORD)
+
         msg = MIMEMultipart()
         msg["From"] = SUPPORT_EMAIL
         msg["To"] = receiver_email
@@ -65,16 +68,18 @@ def send_support_email(receiver_email, subject, body):
 
         msg.attach(MIMEText(body, "plain"))
 
+        # 🔥 TIMEOUT + SAFE CONNECTION
         server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
         server.starttls()
         server.login(SUPPORT_EMAIL, SUPPORT_PASSWORD)
         server.sendmail(SUPPORT_EMAIL, receiver_email, msg.as_string())
         server.quit()
 
+        print("✅ EMAIL SENT SUCCESS")
         return True
 
     except Exception as e:
-        print("❌ EMAIL ERROR:", str(e))
+        print("❌ SUPPORT EMAIL ERROR:", e)
         return False
 
 @app.route("/")
@@ -1175,12 +1180,13 @@ def about():
 def contact():
 
     if request.method == "POST":
-        name = request.form.get("name")
-        email = request.form.get("email")
-        mobile = request.form.get("mobile")
-        message = request.form.get("message")
+        try:
+            name = request.form.get("name")
+            email = request.form.get("email")
+            mobile = request.form.get("mobile")
+            message = request.form.get("message")
 
-        full_message = f"""
+            full_message = f"""
 New Contact Form Submission:
 
 Name: {name}
@@ -1191,21 +1197,20 @@ Message:
 {message}
 """
 
-        try:
-            success = send_support_email(
+            result = send_support_email(
                 "support.timeshare.co@gmail.com",
                 "New Contact Message",
                 full_message
             )
 
-            if success:
+            if result:
                 flash("Message sent successfully! ✅", "success")
             else:
                 flash("Email failed ❌ Try again later", "danger")
 
         except Exception as e:
-            print("❌ CONTACT ERROR:", e)
-            flash("Server busy ❌ Try later", "danger")
+            print("CONTACT ERROR:", e)
+            flash("Something went wrong ❌", "danger")
 
         return redirect("/contact")
 
@@ -1382,6 +1387,7 @@ def test_mail():
         "Hello bhai test ho raha hai"
     )
     return "Success" if result else "Failed"
+    
 # ================= SERVER START =================
 
 if __name__ == "__main__":

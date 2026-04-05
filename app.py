@@ -12,9 +12,6 @@ import razorpay
 import random
 
 orders = []
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, session, redirect, flash
 import mysql.connector
@@ -1387,7 +1384,7 @@ def test_mail():
         "Hello bhai test ho raha hai"
     )
     return "Success" if result else "Failed"
-    
+
 # ================= SERVER START =================
 
 if __name__ == "__main__":

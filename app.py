@@ -65,14 +65,17 @@ def send_support_email(receiver_email, subject, body):
 
         msg.attach(MIMEText(body, "plain"))
 
-        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
         server.starttls()
         server.login(SUPPORT_EMAIL, SUPPORT_PASSWORD)
         server.sendmail(SUPPORT_EMAIL, receiver_email, msg.as_string())
         server.quit()
 
+        return True
+
     except Exception as e:
-        print("Support Email failed:", e)
+        print("❌ EMAIL ERROR:", str(e))
+        return False
 
 @app.route("/")
 def home():
@@ -1188,9 +1191,22 @@ Message:
 {message}
 """
 
-        send_support_email("support.timeshare.co@gmail.com", "New Contact Message", full_message)
+        try:
+            success = send_support_email(
+                "support.timeshare.co@gmail.com",
+                "New Contact Message",
+                full_message
+            )
 
-        flash("Message sent successfully!", "success")
+            if success:
+                flash("Message sent successfully! ✅", "success")
+            else:
+                flash("Email failed ❌ Try again later", "danger")
+
+        except Exception as e:
+            print("❌ CONTACT ERROR:", e)
+            flash("Server busy ❌ Try later", "danger")
+
         return redirect("/contact")
 
     return render_template("contact.html")

@@ -65,7 +65,8 @@ def send_email(receiver_email, subject, body):
         print("EMAIL ERROR:", e)
         return False
 
-    def send_email_async(receiver_email, subject, body):
+def send_email_async(receiver_email, subject, body):
+        app.send_email_async = send_email_async
         import threading
         threading.Thread(
         target=send_email,

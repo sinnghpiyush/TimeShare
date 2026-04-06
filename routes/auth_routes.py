@@ -60,7 +60,7 @@ def register():
             }
 
             # OTP send
-            from app import send_email_async
+            
             send_email_async(email, "OTP Verification - TimeShare", f"Your OTP is {otp}")
             
             flash("OTP sent to your email!", "info")

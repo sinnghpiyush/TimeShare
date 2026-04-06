@@ -1,6 +1,6 @@
 import random
 import time
-from flask import Blueprint, request, render_template, redirect, flash
+from flask import Blueprint, request, render_template, redirect, flash, current_app
 from config import get_db_connection
 from werkzeug.security import generate_password_hash
 
@@ -84,8 +84,7 @@ def forgot_password():
         }
 
         # ✅ EMAIL (async)
-        from app import send_email_async
-        send_email_async(email, "Password Reset OTP", f"Your OTP is {otp}")
+        current_app.send_email_async(email, "Password Reset OTP", f"Your OTP is {otp}")
 
         flash("OTP sent to your email!", "info")
         return redirect(f"/reset-password?email={email}")
@@ -151,8 +150,7 @@ def resend_otp():
         "time": time.time()
     }
 
-    from app import send_email
-    send_email(email, "Resent OTP - TimeShare", f"Your new OTP is {otp}")
+    current_app.send_email_async(email, "Resent OTP - TimeShare", f"Your new OTP is {otp}")
 
     flash("OTP resent successfully!", "success")
 

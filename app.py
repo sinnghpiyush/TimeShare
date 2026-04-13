@@ -13,6 +13,13 @@ import os
 import razorpay
 import random
 import requests   # ✅ NEW (IMPORTANT)
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 
 orders = []
 
@@ -44,6 +51,7 @@ RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 
 def send_email(receiver_email, subject, body):
     try:
+        print("📩 SENDING EMAIL TO:", receiver_email)
         import smtplib
         from email.mime.text import MIMEText
 
@@ -153,6 +161,7 @@ def admin_secure_login():
         if email != ADMIN_EMAIL:
             flash("Invalid Admin Email ❌", "danger")
             return redirect("/admin-secure-login")
+        
 
         import time
 
@@ -184,6 +193,7 @@ def admin_secure_login():
         # optional (अगर use कर रहे हो)
         admin_otp_store[email] = otp
 
+        print("ADMIN OTP TRY:", email)
         send_email(email, "Admin Login OTP", f"Your OTP is {otp}")
 
         return redirect(f"/admin-verify-otp?email={email}")

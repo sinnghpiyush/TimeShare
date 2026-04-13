@@ -7,7 +7,7 @@ The platform allows students to receive real-world career advice through chat, v
 
 The goal of the project is to remove the confusion caused by advertisements, agents, and misleading online information by providing direct communication with experienced individuals.
 
----
+
 
 Features
 
